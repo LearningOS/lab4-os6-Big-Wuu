@@ -3,7 +3,7 @@
 use super::TaskContext;
 use super::{pid_alloc, KernelStack, PidHandle};
 use crate::config::{TRAP_CONTEXT, MAX_SYSCALL_NUM};
-use crate::mm::{MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE};
+use crate::mm::{MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE, MapPermission};
 use crate::sync::UPSafeCell;
 use crate::trap::{trap_handler, TrapContext};
 use crate::timer::get_time_us;
@@ -252,6 +252,35 @@ impl TaskControlBlock {
             task_info.syscall_times[i] = *v;
         }
         task_info
+    }
+    pub fn mmap(&self, start: usize, len: usize, port: usize) -> isize {
+        // check validity
+        let start_va = VirtAddr::from(start);
+        let end_va = VirtAddr::from(start + len);
+        let memory_set = &mut self.inner_exclusive_access().memory_set;
+        if memory_set.is_overlapped(start_va, end_va) {
+            // overlapped with current memory areas
+            return -1;
+        }
+        // map
+        let perm: u8 = ((port & 0x7) << 1) as u8;
+        let perm = MapPermission::from_bits(perm).unwrap();
+        memory_set.insert_framed_area(
+            start_va, 
+            end_va, 
+            perm | MapPermission::U
+        );
+        0
+    }
+    pub fn munmap(&self, start: usize, len: usize) -> isize {
+        let start_va = VirtAddr::from(start);
+        let end_va = VirtAddr::from(start + len);
+        let memory_set = &mut self.inner_exclusive_access().memory_set;
+        if memory_set.remove_framed_area(start_va, end_va) {
+            0
+        } else {
+            -1
+        }
     }
 }
 

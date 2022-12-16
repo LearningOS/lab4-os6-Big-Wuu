@@ -52,6 +52,14 @@ impl MemorySet {
     pub fn token(&self) -> usize {
         self.page_table.token()
     }
+    /// check if [start_va, end_va) is overlapped with this memory set
+    pub fn is_overlapped(&self, start_va: VirtAddr, end_va: VirtAddr) -> bool {
+        let start_vpn: VirtPageNum = start_va.floor();
+        let end_vpn: VirtPageNum = end_va.ceil();
+        self.areas.iter().any(|area| {
+            area.start_vpn() < end_vpn && area.end_vpn() > start_vpn
+        })
+    }
     /// Assume that no conflicts.
     pub fn insert_framed_area(
         &mut self,
@@ -73,6 +81,26 @@ impl MemorySet {
         {
             area.unmap(&mut self.page_table);
             self.areas.remove(idx);
+        }
+    }
+    /// the area [start_va, end_va) must be exactly same
+    pub fn remove_framed_area(&mut self, start_va: VirtAddr, end_va: VirtAddr) -> bool {
+        let start_vpn: VirtPageNum = start_va.floor();
+        let end_vpn: VirtPageNum = end_va.ceil();
+        if let Some((idx, area)) = self
+            .areas
+            .iter_mut()
+            .enumerate()
+            .find(|(_, area)|{
+                // exactly same
+                area.start_vpn() == start_vpn && area.end_vpn() == end_vpn
+            }) 
+        {
+            area.unmap(&mut self.page_table);
+            self.areas.remove(idx);
+            true
+        } else {
+            false
         }
     }
     fn push(&mut self, mut map_area: MapArea, data: Option<&[u8]>) {
@@ -279,6 +307,12 @@ pub struct MapArea {
 }
 
 impl MapArea {
+    pub fn start_vpn(&self) -> VirtPageNum {
+        self.vpn_range.get_start()
+    }
+    pub fn end_vpn(&self) -> VirtPageNum {
+        self.vpn_range.get_end()
+    }
     pub fn new(
         start_va: VirtAddr,
         end_va: VirtAddr,
