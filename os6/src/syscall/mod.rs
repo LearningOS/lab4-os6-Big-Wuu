@@ -37,8 +37,12 @@ use fs::*;
 use process::*;
 use crate::fs::Stat;
 
+use crate::task::{current_task, TaskInfo};
+
+
 /// handle syscall exception with `syscall_id` and other arguments
 pub fn syscall(syscall_id: usize, args: [usize; 4]) -> isize {
+    current_task().unwrap().inner_exclusive_access().update_syscall_times(syscall_id);
     match syscall_id {
         SYSCALL_LINKAT => sys_linkat(args[1] as *const u8, args[3] as *const u8),
         SYSCALL_UNLINKAT => sys_unlinkat(args[1] as *const u8),

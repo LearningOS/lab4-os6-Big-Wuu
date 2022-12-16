@@ -25,9 +25,9 @@ use crate::mm::VirtAddr;
 use crate::mm::MapPermission;
 use crate::config::PAGE_SIZE;
 use crate::timer::get_time_us;
-pub use crate::syscall::process::TaskInfo;
+// pub use crate::syscall::process::TaskInfo;
 use crate::fs::{open_file, OpenFlags};
-pub use task::{TaskControlBlock, TaskStatus};
+pub use task::{TaskControlBlock, TaskStatus, TaskInfo};
 
 pub use context::TaskContext;
 pub use manager::add_task;
