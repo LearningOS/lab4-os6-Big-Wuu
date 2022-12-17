@@ -111,9 +111,11 @@ impl DiskInode {
         self.type_ == DiskInodeType::Directory
     }
     /// Whether this inode is a file
-    #[allow(unused)]
     pub fn is_file(&self) -> bool {
         self.type_ == DiskInodeType::File
+    }
+    pub fn is_valid(&self) -> bool {
+        self.type_ == DiskInodeType::File || self.type_ == DiskInodeType::Directory
     }
     pub fn mark_deleted(&mut self) {
         self.type_ = DiskInodeType::DELETED;

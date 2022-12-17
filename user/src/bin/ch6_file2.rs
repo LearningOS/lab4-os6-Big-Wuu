@@ -24,22 +24,22 @@ pub fn main() -> i32 {
     write(fd, test_str.as_bytes());
     close(fd);
 
-    // unlink(fname);
-    // let fd = open(lname0, OpenFlags::RDONLY) as usize;
-    // let stat2 = Stat::new();
-    // let mut buf = [0u8; 100];
-    // let read_len = read(fd, &mut buf) as usize;
-    // assert_eq!(test_str, core::str::from_utf8(&buf[..read_len]).unwrap(),);
-    // fstat(fd, &stat2);
-    // assert_eq!(stat2.dev, stat.dev);
-    // assert_eq!(stat2.ino, stat.ino);
-    // assert_eq!(stat2.nlink, 3);
-    // unlink(lname1);
-    // unlink(lname2);
-    // fstat(fd, &stat2);
-    // assert_eq!(stat2.nlink, 1);
-    // close(fd);
-    // unlink(lname0);
+    unlink(fname);
+    let fd = open(lname0, OpenFlags::RDONLY) as usize;
+    let stat2 = Stat::new();
+    let mut buf = [0u8; 100];
+    let read_len = read(fd, &mut buf) as usize;
+    assert_eq!(test_str, core::str::from_utf8(&buf[..read_len]).unwrap(),);
+    fstat(fd, &stat2);
+    assert_eq!(stat2.dev, stat.dev);
+    assert_eq!(stat2.ino, stat.ino);
+    assert_eq!(stat2.nlink, 3);
+    unlink(lname1);
+    unlink(lname2);
+    fstat(fd, &stat2);
+    assert_eq!(stat2.nlink, 1);
+    close(fd);
+    unlink(lname0);
     // It's Ok if you don't delete the inode and data blocks.
     println!("Test link OK!");
     0

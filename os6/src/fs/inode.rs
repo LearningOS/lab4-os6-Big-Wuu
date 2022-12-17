@@ -107,6 +107,7 @@ pub fn open_file(name: &str, flags: OpenFlags) -> Option<Arc<OSInode>> {
     let (readable, writable) = flags.read_write();
     if flags.contains(OpenFlags::CREATE) {
         if let Some(inode) = ROOT_INODE.find(name) {
+            debug!("[kernel] create file with same name: {}", name);
             // clear size
             inode.clear();
             Some(Arc::new(OSInode::new(
@@ -146,7 +147,7 @@ pub fn link_file(old_name: &str, new_name: &str) -> isize {
 }
 
 pub fn unlink_file(name: &str) -> isize {
-    todo!()
+    ROOT_INODE.unlink(name)
 }
 
 impl File for OSInode {
