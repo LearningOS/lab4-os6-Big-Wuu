@@ -5,7 +5,7 @@ use crate::mm::translated_str;
 use crate::mm::translated_refmut;
 use crate::task::current_user_token;
 use crate::task::current_task;
-use crate::fs::open_file;
+use crate::fs::{open_file, link_file, unlink_file};
 use crate::fs::OpenFlags;
 use crate::fs::Stat;
 use crate::mm::UserBuffer;
@@ -96,8 +96,14 @@ pub fn sys_fstat(fd: usize, st: *mut Stat) -> isize {
     }
 }
 
-pub fn sys_linkat(_old_name: *const u8, _new_name: *const u8) -> isize {
-    -1
+pub fn sys_linkat(old_name: *const u8, new_name: *const u8) -> isize {
+    let token = current_user_token();
+    let old_path = translated_str(token, old_name);
+    let new_path = translated_str(token, new_name);
+    if old_path == new_path {
+        return 0;
+    }
+    link_file(&old_path, &new_path)
 }
 
 pub fn sys_unlinkat(_name: *const u8) -> isize {

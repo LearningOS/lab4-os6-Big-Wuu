@@ -149,7 +149,7 @@ impl Inode {
     /// Create inode under current inode by name
     pub fn create(&self, name: &str) -> Option<Arc<Inode>> {
         let mut fs = self.fs.lock();
-        if self.modify_disk_inode(|root_inode| {
+        if self.read_disk_inode(|root_inode| {
             // assert it is a directory
             assert!(root_inode.is_dir());
             // has the file been created?
@@ -195,6 +195,38 @@ impl Inode {
             self.block_device.clone(),
         )))
         // release efs lock automatically by compiler
+    }
+    pub fn link(&self, old_name: &str, new_name: &str) -> isize {
+        let mut fs = self.fs.lock();
+        if self.read_disk_inode(|root_inode| {
+            // assert it is a directory
+            assert!(root_inode.is_dir());
+            // has the new file been created?
+            self.find_inode_id(new_name, root_inode)
+        }).is_some() {
+            return -1;
+        }
+        self.modify_disk_inode(|root_inode| {
+            // assert it is a directory
+            assert!(root_inode.is_dir());
+            if let Some(inode_id) = self.find_inode_id(old_name, root_inode) {
+                // append link in the dirent
+                let file_count = (root_inode.size as usize) / DIRENT_SZ;
+                let new_size = (file_count + 1) * DIRENT_SZ;
+                // increase size
+                self.increase_size(new_size as u32, root_inode, &mut fs);
+                // share the same inode_id
+                let dirent = DirEntry::new(new_name, inode_id);
+                root_inode.write_at(
+                    file_count * DIRENT_SZ,
+                    dirent.as_bytes(),
+                    &self.block_device,
+                );
+                0
+            } else {
+                -1
+            }
+        })
     }
     /// List inodes under current inode
     pub fn ls(&self) -> Vec<String> {
