@@ -15,6 +15,7 @@ use spin::{Mutex, MutexGuard};
 
 /// Virtual filesystem layer over easy-fs
 pub struct Inode {
+    pub inode_id: u32,
     block_id: usize,
     block_offset: usize,
     fs: Arc<Mutex<EasyFileSystem>>,
@@ -24,17 +25,25 @@ pub struct Inode {
 impl Inode {
     /// Create a vfs inode
     pub fn new(
+        inode_id: u32,
         block_id: u32,
         block_offset: usize,
         fs: Arc<Mutex<EasyFileSystem>>,
         block_device: Arc<dyn BlockDevice>,
     ) -> Self {
         Self {
+            inode_id,
             block_id: block_id as usize,
             block_offset,
             fs,
             block_device,
         }
+    }
+    pub fn get_type(&self) -> DiskInodeType {
+        let _fs = self.fs.lock();
+        self.read_disk_inode(|disk_inode| {
+            disk_inode.get_type()
+        })
     }
     /// Call a function over a disk inode to read it
     fn read_disk_inode<V>(&self, f: impl FnOnce(&DiskInode) -> V) -> V {
@@ -49,6 +58,34 @@ impl Inode {
             self.block_id,
             Arc::clone(&self.block_device)
         ).lock().modify(self.block_offset, f)
+    }
+    pub fn get_num_links(&self, inode_id: u32) -> u32 {
+        let _fs = self.fs.lock();
+        self.num_links_with_lock(inode_id)
+    }
+    /// Get number of links of inode_id
+    fn num_links_with_lock(&self, inode_id: u32) -> u32 {
+        self.read_disk_inode(|root_inode| {
+            // assert it is a directory
+            assert!(root_inode.is_dir());
+            let file_count = (root_inode.size as usize) / DIRENT_SZ;
+            let mut dirent = DirEntry::empty();
+            let mut cnt = 0;
+            for i in 0..file_count {
+                assert_eq!(
+                    root_inode.read_at(
+                        DIRENT_SZ * i,
+                        dirent.as_bytes_mut(),
+                        &self.block_device,
+                    ),
+                    DIRENT_SZ,
+                );
+                if dirent.inode_number() == inode_id {
+                    cnt += 1;
+                }
+            }
+            cnt
+        })
     }
     /// Find inode under a disk inode by name
     fn find_inode_id(
@@ -83,6 +120,7 @@ impl Inode {
             .map(|inode_id| {
                 let (block_id, block_offset) = fs.get_disk_inode_pos(inode_id);
                 Arc::new(Self::new(
+                    inode_id,
                     block_id,
                     block_offset,
                     self.fs.clone(),
@@ -150,6 +188,7 @@ impl Inode {
         // block_cache_sync_all();
         // return inode
         Some(Arc::new(Self::new(
+            new_inode_id,
             block_id,
             block_offset,
             self.fs.clone(),

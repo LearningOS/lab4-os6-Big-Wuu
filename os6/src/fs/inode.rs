@@ -1,6 +1,7 @@
 use easy_fs::{
     EasyFileSystem,
     Inode,
+    DiskInodeType,
 };
 use crate::drivers::BLOCK_DEVICE;
 use crate::sync::UPSafeCell;
@@ -8,7 +9,7 @@ use alloc::sync::Arc;
 use lazy_static::*;
 use bitflags::*;
 use alloc::vec::Vec;
-use super::File;
+use super::{File, Stat, StatMode};
 use crate::mm::UserBuffer;
 
 /// A wrapper around a filesystem inode
@@ -165,5 +166,19 @@ impl File for OSInode {
             total_write_size += write_size;
         }
         total_write_size
+    }
+    fn stat(&self) -> super::Stat {
+        let inner = self.inner.exclusive_access();
+        Stat {
+            dev: 0,
+            ino: inner.inode.inode_id as u64,
+            mode: match inner.inode.get_type() {
+                DiskInodeType::File => StatMode::FILE,
+                DiskInodeType::Directory => StatMode::DIR,
+                DiskInodeType::DELETED => StatMode::NULL,
+            },
+            nlink: ROOT_INODE.get_num_links(inner.inode.inode_id),
+            pad: [0; 7],
+        }
     }
 }
