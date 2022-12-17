@@ -19,9 +19,9 @@ pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
         return -1;
     }
     if let Some(file) = &inner.fd_table[fd] {
-        let file = file.clone();
-        // release current task TCB manually to avoid multi-borrow
-        drop(inner);
+        // let file = file.clone();
+        // // release current task TCB manually to avoid multi-borrow
+        // drop(inner);
         file.write(
             UserBuffer::new(translated_byte_buffer(token, buf, len))
         ) as isize
@@ -38,9 +38,9 @@ pub fn sys_read(fd: usize, buf: *const u8, len: usize) -> isize {
         return -1;
     }
     if let Some(file) = &inner.fd_table[fd] {
-        let file = file.clone();
-        // release current task TCB manually to avoid multi-borrow
-        drop(inner);
+        // let file = file.clone();
+        // // release current task TCB manually to avoid multi-borrow
+        // drop(inner);
         file.read(
             UserBuffer::new(translated_byte_buffer(token, buf, len))
         ) as isize
