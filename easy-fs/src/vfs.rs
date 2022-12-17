@@ -213,7 +213,7 @@ impl Inode {
         });
         log::debug!("[fs] create, inode_id = {}", new_inode_id);
         let (block_id, block_offset) = fs.get_disk_inode_pos(new_inode_id);
-        // block_cache_sync_all();
+        block_cache_sync_all();
         // return inode
         Some(Arc::new(Self::new(
             new_inode_id,
@@ -366,7 +366,7 @@ impl Inode {
             self.increase_size((offset + buf.len()) as u32, disk_inode, &mut fs);
             disk_inode.write_at(offset, buf, &self.block_device)
         });
-        // block_cache_sync_all();
+        block_cache_sync_all();
         size
     }
     /// Clear the data in current inode
