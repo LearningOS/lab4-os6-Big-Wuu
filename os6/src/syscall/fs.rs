@@ -53,7 +53,7 @@ pub fn sys_open(path: *const u8, flags: u32) -> isize {
     let task = current_task().unwrap();
     let token = current_user_token();
     let path = translated_str(token, path);
-    debug!("[kernel] before open {}", path);
+    // debug!("[kernel] before open {}", &path);
     if let Some(inode) = open_file(
         path.as_str(),
         OpenFlags::from_bits(flags).unwrap()
@@ -77,7 +77,7 @@ pub fn sys_close(fd: usize) -> isize {
         return -1;
     }
     inner.fd_table[fd].take();
-    debug!("[kernel] after close fd = {}", fd);
+    // debug!("[kernel] after close fd = {}", fd);
     0
 }
 
@@ -86,7 +86,7 @@ pub fn sys_fstat(fd: usize, st: *mut Stat) -> isize {
     let token = current_user_token();
     let task = current_task().unwrap();
     let inner = task.inner_exclusive_access();
-    debug!("[kernel] before fstat fd = {}", fd);
+    // debug!("[kernel] before fstat fd = {}", fd);
     if fd >= inner.fd_table.len() {
         return -1;
     }
@@ -103,7 +103,7 @@ pub fn sys_linkat(old_name: *const u8, new_name: *const u8) -> isize {
     let token = current_user_token();
     let old_path = translated_str(token, old_name);
     let new_path = translated_str(token, new_name);
-    debug!("[kernel] before link {} -> {}", &new_path, &old_path);
+    // debug!("[kernel] before link {} -> {}", &new_path, &old_path);
     if old_path == new_path {
         return 0;
     }
@@ -113,6 +113,6 @@ pub fn sys_linkat(old_name: *const u8, new_name: *const u8) -> isize {
 pub fn sys_unlinkat(name: *const u8) -> isize {
     let token = current_user_token();
     let path = translated_str(token, name);
-    debug!("[kernel] before unlink {}", &path);
+    // debug!("[kernel] before unlink {}", &path);
     unlink_file(&path)
 }
