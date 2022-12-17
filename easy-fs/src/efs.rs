@@ -51,15 +51,36 @@ impl EasyFileSystem {
             inode_area_start_block: 1 + inode_bitmap_blocks,
             data_area_start_block: 1 + inode_total_blocks + data_bitmap_blocks,
         };
-        // clear all blocks
-        for i in 0..total_blocks {
+        // // clear all blocks
+        // for i in 0..total_blocks {
+        //     get_block_cache(
+        //         i as usize,
+        //         Arc::clone(&block_device)
+        //     )
+        //     .lock()
+        //     .modify(0, |data_block: &mut DataBlock| {
+        //         for byte in data_block.iter_mut() { *byte = 0; }
+        //     });
+        // }
+        // only clear bitmap blocks
+        for i in 1..efs.inode_area_start_block {
             get_block_cache(
                 i as usize,
                 Arc::clone(&block_device)
             )
             .lock()
             .modify(0, |data_block: &mut DataBlock| {
-                for byte in data_block.iter_mut() { *byte = 0; }
+                data_block.fill(0);
+            });
+        }
+        for i in 1+inode_total_blocks..efs.data_area_start_block {
+            get_block_cache(
+                i as usize,
+                Arc::clone(&block_device)
+            )
+            .lock()
+            .modify(0, |data_block: &mut DataBlock| {
+                data_block.fill(0);
             });
         }
         // initialize SuperBlock
@@ -121,6 +142,7 @@ impl EasyFileSystem {
         let (block_id, block_offset) = efs.lock().get_disk_inode_pos(0);
         // release efs lock
         Inode::new(
+            0,
             block_id,
             block_offset,
             Arc::clone(efs),

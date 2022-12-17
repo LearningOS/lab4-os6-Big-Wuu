@@ -74,10 +74,11 @@ impl SuperBlock {
 }
 
 /// Type of a disk inode
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum DiskInodeType {
     File,
     Directory,
+    DELETED,
 }
 
 /// A indirect block
@@ -110,9 +111,17 @@ impl DiskInode {
         self.type_ == DiskInodeType::Directory
     }
     /// Whether this inode is a file
-    #[allow(unused)]
     pub fn is_file(&self) -> bool {
         self.type_ == DiskInodeType::File
+    }
+    pub fn is_valid(&self) -> bool {
+        self.type_ == DiskInodeType::File || self.type_ == DiskInodeType::Directory
+    }
+    pub fn mark_deleted(&mut self) {
+        self.type_ = DiskInodeType::DELETED;
+    }
+    pub fn get_type(&self) -> DiskInodeType {
+        self.type_
     }
     /// Get the number of data blocks corresponding to size
     pub fn data_blocks(&self) -> u32 {
